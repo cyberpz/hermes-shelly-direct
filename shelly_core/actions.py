@@ -100,9 +100,36 @@ def act_discover(cfg: Dict[str, Any], subnet: str = "") -> Dict[str, Any]:
 
 
 def act_list(cfg: Dict[str, Any]) -> Dict[str, Any]:
-    devices = [inventory.public_view(d) for d in inventory.load().values()]
-    devices.sort(key=lambda d: (d.get("name") or d.get("id") or d.get("mac", "")).lower())
+    inv = inventory.load()
+    devices = [inventory.public_view(d) for d in inv.values()]
+    order = {mac: i for i, mac in enumerate(inventory.load_order())}
+    # manual order first, then mapped (named) devices, then unmapped, A-Z
+    devices.sort(key=lambda d: (
+        order.get(d["mac"], len(order)),
+        0 if d["mapped"] else 1,
+        d["display"].lower(),
+    ))
     return {"ok": True, "count": len(devices), "devices": devices}
+
+
+def act_rename(mac: str, alias: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
+    inv = inventory.load()
+    key = str(mac).upper()
+    if key not in inv:
+        matches = [k for k, d in inv.items()
+                   if d.get("ip") == mac or k.lower() == key.lower()]
+        if len(matches) == 1:
+            key = matches[0]
+    if key not in inv:
+        return {"ok": False, "error": f"no device matches '{mac}'"}
+    inv[key]["alias"] = str(alias).strip()[:64]
+    inventory.save(inv)
+    return {"ok": True, "device": inventory.public_view(inv[key])}
+
+
+def act_order(macs: List[str], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    inventory.save_order([str(m) for m in macs])
+    return {"ok": True, "count": len(macs)}
 
 
 def act_status(device: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -119,6 +146,21 @@ def act_status(device: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": False, "error": result["error"], "device": inventory.public_view(dev)}
     inventory.save(inventory.load() | {dev.get("mac") or f"ip:{dev['ip']}": dev})
     return {"ok": True, "device": inventory.public_view(dev), "status": result["status"]}
+
+
+def act_status_fast(device: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Polling path: cached gen, one status read, no probe/name round-trips.
+    Falls back to full act_status when the generation is unknown."""
+    inv = inventory.load()
+    dev, _ = inventory.resolve(inv, device)
+    if dev is None or not dev.get("gen"):
+        return act_status(device, cfg)
+    client = _client(dev, cfg)
+    raw = client.get_status(dev["gen"])
+    if "error" in raw:
+        return {"ok": False, "error": raw["error"]}
+    status = normalize_status(dev["gen"], raw)
+    return {"ok": True, "device": inventory.public_view(dev), "status": status}
 
 
 def _write_with_verify(dev, cfg, write_fn, readback_fn, want) -> Dict[str, Any]:
@@ -143,35 +185,62 @@ def _write_with_verify(dev, cfg, write_fn, readback_fn, want) -> Dict[str, Any]:
             "error": result.get("error")}
 
 
+def _persist(dev: Dict[str, Any]) -> None:
+    inventory.save(inventory.load() | {dev.get("mac") or f"ip:{dev['ip']}": dev})
+
+
 def act_switch(device: str, action: str, channel: int,
                cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Lean write path: cached gen, one write, one readback (+1 retry max).
+    Every extra round-trip here is latency the user feels on the toggle."""
     dev, cands = _resolve_or_discover(device, cfg)
     if dev is None:
         return {"ok": False, "error": f"no device matches '{device}'"
                     + (f" (candidates: {', '.join(d.get('name','?') for d in cands[:5])})"
                        if cands else "")}
-    info = _fetch_status(dev, cfg)
-    if "error" in info:
-        return {"ok": False, "error": info["error"]}
-    gen = info["gen"]
+    client = _client(dev, cfg)
+    gen = dev.get("gen")
+    if not gen:
+        info = client.probe()
+        if "error" in info:
+            return {"ok": False, "error": f"device unreachable at {dev.get('ip')} "
+                                          f"(battery models may be asleep)"}
+        gen = info["gen"]
+        dev["gen"] = gen
 
-    def write(client, g):
-        return client.set_switch(g, channel, action)
-
-    def readback(client, g):
-        status = normalize_status(g, client.get_status(g))
+    def read():
+        raw = client.get_status(gen)
+        if "error" in raw:
+            return None, None
+        status = normalize_status(gen, raw)
         for relay in status["relays"]:
             if relay["index"] == channel:
-                return relay["on"]
-        return None
+                return status, relay["on"]
+        return status, None
 
+    result = client.set_switch(gen, channel, action)
+    ok = "error" not in result
+    verified: Optional[bool] = None
+    retried = False
+    status = None
     want = {"on": True, "off": False}.get(action)
-    result = _write_with_verify(dev, cfg, write, readback, want)
-    final = _fetch_status(dev, cfg)
-    result["state"] = final.get("status") if "error" not in final else None
-    result["device"] = inventory.public_view(dev)
-    inventory.save(inventory.load() | {dev.get("mac") or f"ip:{dev['ip']}": dev})
-    return result
+    if ok and cfg["verify_writes"] and want is not None:
+        time.sleep(0.25)
+        status, observed = read()
+        if observed != want:
+            retried = True
+            client.set_switch(gen, channel, action)
+            time.sleep(0.25)
+            status, observed = read()
+        verified = observed == want
+    elif ok:
+        time.sleep(0.15)
+        status, _ = read()
+    dev["online"] = ok
+    _persist(dev)
+    return {"ok": ok, "verified": verified, "retried": retried,
+            "error": result.get("error"), "state": status,
+            "device": inventory.public_view(dev)}
 
 
 def act_set(device: str, channel: int, brightness: Optional[int],

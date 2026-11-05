@@ -115,6 +115,8 @@
     var pending = !!props.pending;
     var offline = !d.online;
     var disabled = offline || pending;
+    var renPair = useState(false), renaming = renPair[0], setRenaming = renPair[1];
+    var draftPair = useState(""), draft = draftPair[0], setDraft = draftPair[1];
     var rows = [];
 
     var relays = relaysOf(d, status);
@@ -189,18 +191,41 @@
     else if (status) body = h("div", { className: "text-xs text-muted-foreground" }, "No controllable channels reported.");
     else body = h("div", { className: "text-xs text-muted-foreground" }, "Waiting for status…");
 
+    var headerTop = h("div", { className: "flex items-start justify-between gap-2" },
+      h("div", { className: "min-w-0" },
+        h(CardTitle, { className: "text-base truncate" }, d.display || d.name || d.id),
+        d.model ? h("div", { className: "text-xs text-muted-foreground truncate" }, d.model) : null
+      ),
+      h("div", { className: "flex shrink-0 items-center gap-0.5" },
+        h("span", {
+          className: cn("sd-dot", d.online ? "sd-dot-on" : "sd-dot-off"),
+          title: d.online ? "online" : "offline"
+        }),
+        h(Button, { size: "sm", variant: "ghost", className: "h-6 w-6 p-0 text-xs", title: "Move up",
+          onClick: function () { props.onMove && props.onMove(-1); } }, "▲"),
+        h(Button, { size: "sm", variant: "ghost", className: "h-6 w-6 p-0 text-xs", title: "Move down",
+          onClick: function () { props.onMove && props.onMove(1); } }, "▼"),
+        h(Button, { size: "sm", variant: "ghost", className: "h-6 px-1.5 text-xs", title: "Rename device",
+          onClick: function () { setDraft(d.display || d.name || ""); setRenaming(true); } }, "✎")
+      ));
+    if (renaming) {
+      headerTop = h("div", { className: "flex items-center gap-1" },
+        h(Input, { value: draft, autoFocus: true, placeholder: "Device name",
+          className: "h-7 flex-1 text-xs font-mono",
+          onChange: function (e) { setDraft(e.target.value); },
+          onKeyDown: function (e) {
+            if (e.key === "Enter" && draft.trim()) { setRenaming(false); props.rename(draft.trim()); }
+            if (e.key === "Escape") setRenaming(false);
+          } }),
+        h(Button, { size: "sm", className: "h-7 shrink-0", disabled: !draft.trim(),
+          onClick: function () { var n = draft.trim(); setRenaming(false); if (n) props.rename(n); } }, "Save"),
+        h(Button, { size: "sm", variant: "ghost", className: "h-7 shrink-0 px-2",
+          onClick: function () { setRenaming(false); } }, "×"));
+    }
+
     return h(Card, { className: cn("sd-card", offline && "opacity-50") },
       h(CardHeader, { className: "pb-2 gap-1" },
-        h("div", { className: "flex items-start justify-between gap-2" },
-          h("div", { className: "min-w-0" },
-            h(CardTitle, { className: "text-base truncate" }, d.name || d.id),
-            d.model ? h("div", { className: "text-xs text-muted-foreground truncate" }, d.model) : null
-          ),
-          h("span", {
-            className: cn("sd-dot", d.online ? "sd-dot-on" : "sd-dot-off"),
-            title: d.online ? "online" : "offline"
-          })
-        ),
+        headerTop,
         h("div", { className: "flex flex-wrap items-center gap-1" },
           h(Badge, { variant: "secondary", className: "text-xs" }, "G" + (d.gen || "?")),
           h(Badge, { variant: "outline", className: "text-xs font-normal" }, d.kind || "device"),
@@ -216,7 +241,7 @@
   /* ---------- main tab ---------- */
 
   function App() {
-    var storePair = useState({ devices: [], statuses: {}, errors: {}, discovering: false, lastUpdate: null, loaded: false });
+    var storePair = useState({ devices: [], statuses: {}, errors: {}, discovering: false, lastUpdate: null, loaded: false, filter: "all" });
     var store = storePair[0], setStore = storePair[1];
     var pendPair = useState({});
     var pending = pendPair[0], setPendingMap = pendPair[1];
@@ -257,8 +282,9 @@
       });
     }, [patch]);
 
-    var fetchDevice = useCallback(function (mac) {
-      return getJSON("/device/" + encodeURIComponent(mac)).then(function (res) {
+    var fetchDevice = useCallback(function (mac, fast) {
+      var path = "/device/" + encodeURIComponent(mac) + (fast ? "/status" : "");
+      return getJSON(path).then(function (res) {
         if (!aliveRef.current) return;
         if (res && res.ok === false) setDeviceError(mac, res.error || "device read failed");
         else if (res) setDeviceStatus(mac, res.status);
@@ -269,9 +295,40 @@
 
     var fetchStatuses = useCallback(function (devices) {
       (devices || []).forEach(function (d) {
-        if (d && d.online && d.mac) fetchDevice(d.mac);
+        if (d && d.online && d.mac) fetchDevice(d.mac, true);
       });
     }, [fetchDevice]);
+
+    var matchesFilter = function (d, filter) {
+      return filter === "all" || (filter === "mapped" ? d.mapped : !d.mapped);
+    };
+
+    var moveDevice = useCallback(function (mac, dir) {
+      setStore(function (prev) {
+        var devs = prev.devices.slice();
+        var vis = devs.filter(function (d) { return matchesFilter(d, prev.filter); });
+        var i = -1;
+        vis.forEach(function (d, k) { if (d.mac === mac) i = k; });
+        var j = i + dir;
+        if (i < 0 || j < 0 || j >= vis.length) return prev;
+        var t = vis[i]; vis[i] = vis[j]; vis[j] = t;
+        var k = 0;
+        var next = devs.map(function (d) { return matchesFilter(d, prev.filter) ? vis[k++] : d; });
+        postJSON("/order", { macs: next.map(function (d) { return d.mac; }) }).catch(function () {});
+        return Object.assign({}, prev, { devices: next });
+      });
+    }, []);
+
+    var renameDevice = useCallback(function (mac, name) {
+      postJSON("/rename", { mac: mac, name: name }).then(function (res) {
+        if (!aliveRef.current || !res || res.ok === false) return;
+        setStore(function (prev) {
+          return Object.assign({}, prev, {
+            devices: prev.devices.map(function (d) { return d.mac === mac ? res.device : d; })
+          });
+        });
+      }).catch(function () {});
+    }, []);
 
     var loadDevices = useCallback(function () {
       return getJSON("/devices").then(function (res) {
@@ -336,6 +393,15 @@
           h(Badge, { variant: "outline", className: "text-xs font-normal" }, "v" + version)
         ),
         h("div", { className: "flex items-center gap-2" },
+          h("select", {
+            value: store.filter,
+            "aria-label": "Filter devices",
+            className: "h-8 rounded-md border border-border bg-background px-2 text-xs font-courier text-foreground",
+            onChange: function (e) { patch({ filter: e.target.value }); }
+          },
+            h("option", { value: "all" }, "All devices"),
+            h("option", { value: "mapped" }, "Mapped only"),
+            h("option", { value: "unmapped" }, "Unmapped only")),
           h("span", { className: "text-xs text-muted-foreground" },
             store.lastUpdate ? "updated " + timeAgo(store.lastUpdate) : "not updated yet"),
           h(Button, { size: "sm", variant: "outline", onClick: loadDevices, disabled: store.discovering }, "Refresh"),
@@ -358,14 +424,17 @@
             ))
         : null,
       devices.length
-        ? h("div", { className: "sd-grid" }, devices.map(function (d) {
+        ? h("div", { className: "sd-grid" },
+            devices.filter(function (d) { return matchesFilter(d, store.filter); }).map(function (d, idx, vis) {
             return h(DeviceCard, {
               key: d.mac || d.id,
               device: d,
               status: store.statuses[d.mac],
               error: store.errors[d.mac],
               pending: !!pending[d.mac],
-              act: function (payload) { act(d.mac, payload); }
+              act: function (payload) { act(d.mac, payload); },
+              onMove: vis.length > 1 ? function (dir) { moveDevice(d.mac, dir); } : null,
+              rename: function (name) { renameDevice(d.mac, name); }
             });
           }))
         : null,

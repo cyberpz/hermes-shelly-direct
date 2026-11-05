@@ -44,7 +44,7 @@ TOOL_SCHEMA = {
             "action": {
                 "type": "string",
                 "enum": ["discover", "list", "status", "on", "off", "toggle",
-                         "set", "cover", "meter", "sensor"],
+                         "set", "cover", "meter", "sensor", "rename"],
             },
             "device": {
                 "type": "string",
@@ -65,6 +65,11 @@ TOOL_SCHEMA = {
                 "type": "string",
                 "description": "discover only: CIDR to sweep when UDP broadcast "
                                "finds nothing (e.g. '192.168.1.0/24').",
+            },
+            "name": {
+                "type": "string",
+                "description": "rename only: local alias for the device "
+                               "(takes precedence over the device's own name).",
             },
         },
         "required": ["action"],
@@ -117,6 +122,8 @@ def _make_handler(ctx):
                 result = actions.act_meter(device, cfg)
             elif action == "sensor":
                 result = actions.act_sensor(device, cfg)
+            elif action == "rename":
+                result = actions.act_rename(device, str(args.get("name", "") or ""), cfg)
             else:
                 result = {"ok": False, "error": f"unknown action '{action}'"}
             return json.dumps(result, ensure_ascii=False)

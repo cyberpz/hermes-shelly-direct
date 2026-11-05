@@ -38,6 +38,22 @@ def _inventory_file() -> Path:
     return data_dir() / "inventory.json"
 
 
+def _order_file() -> Path:
+    return data_dir() / "order.json"
+
+
+def load_order() -> List[str]:
+    try:
+        data = json.loads(_order_file().read_text())
+        return [str(m).upper() for m in data.get("order", [])]
+    except (OSError, ValueError):
+        return []
+
+
+def save_order(macs: List[str]) -> None:
+    _order_file().write_text(json.dumps({"order": [str(m).upper() for m in macs]}))
+
+
 def load() -> Dict[str, Dict[str, Any]]:
     try:
         raw = json.loads(_inventory_file().read_text())
@@ -83,6 +99,7 @@ def upsert(inventory: Dict[str, Dict[str, Any]],
             "mac": mac,
             "id": dev.get("id") or existing.get("id", ""),
             "name": dev.get("name") or existing.get("name", ""),
+            "alias": existing.get("alias", ""),  # user-set name always wins
             "model": dev.get("model") or existing.get("model", ""),
             "gen": int(dev.get("gen") or existing.get("gen", 1)),
             "ip": dev.get("ip") or existing.get("ip", ""),
@@ -114,17 +131,28 @@ def resolve(inventory: Dict[str, Dict[str, Any]],
                 or (dev.get("mac") and dev["mac"] == compact)
                 or _norm(dev.get("id", "")) == q):
             return dev, []
-    exact = [d for d in inventory.values() if d.get("name") and _norm(d["name"]) == q]
+    exact = [d for d in inventory.values()
+             if d.get("alias") and _norm(d["alias"]) == q]
+    if not exact:
+        exact = [d for d in inventory.values()
+                 if d.get("name") and _norm(d["name"]) == q]
     if len(exact) == 1:
         return exact[0], []
     if len(exact) > 1:
         return None, exact
     words = q.split()
     subs = [d for d in inventory.values()
-            if d.get("name") and all(w in _norm(d["name"]) for w in words)]
+            if d.get("alias") and all(w in _norm(d["alias"]) for w in words)]
+    if not subs:
+        subs = [d for d in inventory.values()
+                if d.get("name") and all(w in _norm(d["name"]) for w in words)]
     if len(subs) == 1:
         return subs[0], []
     return None, subs
+
+
+def display_name(dev: Dict[str, Any]) -> str:
+    return dev.get("alias") or dev.get("name") or dev.get("id") or dev.get("mac") or dev.get("ip", "?")
 
 
 def public_view(dev: Dict[str, Any]) -> Dict[str, Any]:
@@ -133,6 +161,9 @@ def public_view(dev: Dict[str, Any]) -> Dict[str, Any]:
         "mac": dev.get("mac", ""),
         "id": dev.get("id", ""),
         "name": dev.get("name", ""),
+        "alias": dev.get("alias", ""),
+        "display": display_name(dev),
+        "mapped": bool(dev.get("alias") or dev.get("name")),
         "model": dev.get("model", ""),
         "gen": dev.get("gen", 1),
         "ip": dev.get("ip", ""),

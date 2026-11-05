@@ -90,6 +90,11 @@ def device_status(mac: str):
     return actions.act_status(mac.upper(), merged_cfg(_settings()))
 
 
+@router.get("/device/{mac}/status")
+def device_status_fast(mac: str):
+    return actions.act_status_fast(mac.upper(), merged_cfg(_settings()))
+
+
 @router.post("/action")
 def action(body: ActionBody):
     cfg = merged_cfg(_settings())
@@ -102,6 +107,25 @@ def action(body: ActionBody):
         return actions.act_cover(body.mac.upper(), body.op, body.position,
                                  body.channel, cfg)
     return {"ok": False, "error": f"unsupported action '{body.action}'"}
+
+
+class RenameBody(BaseModel):
+    mac: str
+    name: str
+
+
+class OrderBody(BaseModel):
+    macs: list
+
+
+@router.post("/rename")
+def rename(body: RenameBody):
+    return actions.act_rename(body.mac, body.name, merged_cfg(_settings()))
+
+
+@router.post("/order")
+def order(body: OrderBody):
+    return actions.act_order(body.macs, merged_cfg(_settings()))
 
 
 @router.get("/settings")
