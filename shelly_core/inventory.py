@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 PLUGIN_ID = "shelly-direct"
+_SAVE_LOCK = threading.Lock()
 
 
 def data_dir() -> Path:
@@ -46,18 +48,26 @@ def load() -> Dict[str, Dict[str, Any]]:
 
 
 def save(inventory: Dict[str, Dict[str, Any]]) -> None:
-    tmp = _inventory_file().with_suffix(".json.tmp")
-    tmp.write_text(json.dumps({"devices": inventory,
-                               "updated": time.strftime("%Y-%m-%dT%H:%M:%S")},
-                              ensure_ascii=False, indent=1))
-    tmp.replace(_inventory_file())
+    # unique tmp name + lock: the dashboard fetches many device statuses
+    # concurrently and a shared tmp path races (ENOENT on replace)
+    with _SAVE_LOCK:
+        tmp = _inventory_file().with_suffix(f".json.{os.getpid()}.{threading.get_ident()}.tmp")
+        tmp.write_text(json.dumps({"devices": inventory,
+                                   "updated": _now()},
+                                  ensure_ascii=False, indent=1))
+        tmp.replace(_inventory_file())
+
+
+def _now() -> str:
+    # timezone-aware ISO: dashboard timeAgo() needs the offset
+    return time.strftime("%Y-%m-%dT%H:%M:%S%z")
 
 
 def upsert(inventory: Dict[str, Dict[str, Any]],
            discovered: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """Merge discovery results, keeping user-visible fields (name) and filling
     gaps. Devices keyed by MAC; MAC-less hits keyed by IP."""
-    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    now = _now()
     ip_index = {d.get("ip"): k for k, d in inventory.items()
                 if d.get("ip") and not d.get("mac")}
     for dev in discovered:

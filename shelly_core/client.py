@@ -206,10 +206,11 @@ def normalize_status(gen: int, raw: Dict[str, Any]) -> Dict[str, Any]:
                 item["rgb"] = l["rgb"]
             out["lights"].append(item)
         for i, c in enumerate(raw.get("rollers") or []):
+            pos = c.get("current_pos")
             out["covers"].append({
                 "index": i,
                 "state": _COVER_STATE.get(str(c.get("state", "")), str(c.get("state", "?"))),
-                "position": c.get("current_pos"),
+                "position": max(0, min(100, pos)) if isinstance(pos, (int, float)) else None,
             })
         for i, m in enumerate(raw.get("meters") or []):
             out["meters"].append({"index": i, "power": m.get("power", m.get("apower")),
@@ -243,11 +244,12 @@ def normalize_status(gen: int, raw: Dict[str, Any]) -> Dict[str, Any]:
                 item["rgb"] = comp["rgb"]
             out["lights"].append(item)
         elif kind == "cover":
+            pos = comp.get("position", comp.get("current_pos"))
             out["covers"].append({
                 "index": index,
                 "state": _COVER_STATE.get(str(comp.get("state", "")),
                                           str(comp.get("state", "?"))),
-                "position": comp.get("position", comp.get("current_pos")),
+                "position": max(0, min(100, pos)) if isinstance(pos, (int, float)) else None,
                 "apower": comp.get("apower"),
             })
         elif kind in ("pm", "em"):
