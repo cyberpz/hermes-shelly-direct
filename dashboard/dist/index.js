@@ -438,6 +438,19 @@
     var devices = store.devices;
     var onlineCount = devices.filter(function (d) { return d.online; }).length;
 
+    useEffect(function () {
+      // Press feedback: any button in the tab flashes for 500ms on click.
+      function onPress(e) {
+        var t = e.target;
+        var b = t && t.closest ? t.closest("button") : null;
+        if (!b || !b.closest(".sd-wrap") || b.disabled) return;
+        b.classList.add("sd-flash");
+        setTimeout(function () { b.classList.remove("sd-flash"); }, 500);
+      }
+      document.addEventListener("click", onPress, true);
+      return function () { document.removeEventListener("click", onPress, true); };
+    }, []);
+
     return h("div", { className: "sd-wrap flex flex-col gap-4 p-4" },
       h("div", { className: "flex flex-wrap items-center justify-between gap-3" },
         h("div", { className: "flex items-center gap-2" },

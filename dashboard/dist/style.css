@@ -17,6 +17,27 @@
 .sd-card.sd-offline { opacity: 0.45; }
 /* sharp everything inside the card */
 .sd-card button, .sd-card input, .sd-card select { border-radius: 0 !important; }
+/* hollow buttons: black fill, theme border, square, icon-centred */
+.sd-wrap button {
+  border-radius: 0 !important;
+  background: #000 !important;
+  border: 1px solid var(--border, var(--color-border, #262626)) !important;
+  color: var(--foreground, #ffffff) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.sd-wrap button:hover:not(:disabled) {
+  border-color: var(--foreground, #ffffff) !important;
+}
+.sd-wrap button:disabled { opacity: 0.4; }
+.sd-wrap button.sd-flash {
+  background: var(--foreground, #ffffff) !important;
+  border-color: var(--foreground, #ffffff) !important;
+  color: #000 !important;
+}
 .sd-head { border-bottom: 1px solid var(--border, var(--color-border, #262626)); }
 .sd-foot {
   display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
