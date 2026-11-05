@@ -224,18 +224,27 @@
           onClick: function () { setRenaming(false); } }, "×"));
     }
 
-    return h(Card, { className: cn("sd-card", offline && "opacity-50") },
-      h(CardHeader, { className: "pb-2 gap-1" },
+    var live = relays.some(function (r) { return r.on === true; }) ||
+               lights.some(function (l) { return l.on === true; });
+
+    return h(Card, { className: cn("sd-card", offline && "sd-offline", live && "sd-live") },
+      h(CardHeader, { className: "sd-head pb-2 gap-1" },
         headerTop,
         h("div", { className: "flex flex-wrap items-center gap-1" },
-          h(Badge, { variant: "secondary", className: "text-xs" }, "G" + (d.gen || "?")),
-          h(Badge, { variant: "outline", className: "text-xs font-normal" }, d.kind || "device"),
-          d.ip ? h("span", { className: "font-mono text-xs text-muted-foreground" }, d.ip) : null,
+          h("span", { className: "sd-kind" }, d.kind || "device"),
+          h("span", { className: "sd-kind" }, "G" + (d.gen || "?")),
           pending ? h("span", { className: "sd-spin" }) : null,
           error ? h(Badge, { variant: "destructive", className: "sd-err text-xs" }, error) : null
         )
       ),
-      h(CardContent, { className: "flex flex-col gap-2" }, body)
+      h(CardContent, { className: "flex flex-col gap-2" },
+        body,
+        h("div", { className: "sd-foot" },
+          d.ip ? h("span", null, d.ip) : null,
+          d.ip && d.last_seen ? h("span", { className: "sd-sep" }, "/") : null,
+          d.last_seen ? h("span", null, "seen " + timeAgo(d.last_seen)) : null
+        )
+      )
     );
   }
 

@@ -1,11 +1,32 @@
-/* Shelly Direct — only what Tailwind tokens cannot express. */
-.sd-wrap { max-width: 72rem; margin: 0 auto; }
+/* Shelly Direct — sharp card pass. Theme tokens only, no invented colors. */
+.sd-wrap { max-width: 76rem; margin: 0 auto; }
 .sd-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.75rem;
 }
-.sd-card { min-width: 0; }
+.sd-card {
+  min-width: 0;
+  border-radius: 0 !important;
+  border: 1px solid var(--color-border, #262626);
+  border-left: 3px solid var(--color-border, #262626);
+  transition: border-color 0.15s ease;
+}
+.sd-card:hover { border-color: var(--color-muted-foreground, #525252); }
+.sd-card.sd-live { border-left-color: var(--color-primary, #e5e5e5); }
+.sd-card.sd-offline { opacity: 0.45; }
+/* sharp everything inside the card */
+.sd-card button, .sd-card input, .sd-card select { border-radius: 0 !important; }
+.sd-head { border-bottom: 1px solid var(--color-border, #262626); }
+.sd-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  border-top: 1px solid var(--color-border, #262626);
+  margin-top: 0.35rem; padding-top: 0.45rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-muted-foreground, #737373);
+}
+.sd-foot .sd-sep { opacity: 0.5; }
 .sd-err {
   max-width: 100%;
   overflow: hidden;
@@ -13,11 +34,20 @@
   white-space: nowrap;
 }
 .sd-dot {
-  width: 9px; height: 9px; border-radius: 9999px;
+  width: 8px; height: 8px; border-radius: 0;
   display: inline-block; flex: none; margin-top: 4px;
 }
-.sd-dot-on { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.7); }
-.sd-dot-off { background: #6b7280; }
+.sd-dot-on {
+  background: var(--color-primary, #22c55e);
+  box-shadow: 0 0 6px var(--color-primary, rgba(34, 197, 94, 0.7));
+}
+.sd-dot-off { background: var(--color-muted-foreground, #6b7280); }
+.sd-kind {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--color-border, #262626);
+  padding: 1px 5px; color: var(--color-muted-foreground, #737373);
+}
 .sd-spin {
   display: inline-block; flex: none;
   width: 0.8rem; height: 0.8rem;
@@ -32,15 +62,15 @@
   flex: 1 1 auto; min-width: 0; height: 4px;
   appearance: none; -webkit-appearance: none;
   background: var(--color-muted, #2a2a2a);
-  border-radius: 9999px; outline: none; cursor: pointer;
+  outline: none; cursor: pointer;
 }
 .sd-slider::-webkit-slider-thumb {
   appearance: none; -webkit-appearance: none;
-  width: 14px; height: 14px; border-radius: 9999px;
-  background: var(--midground, #e5e5e5); border: none; cursor: pointer;
+  width: 13px; height: 13px; border-radius: 0;
+  background: var(--color-primary, #e5e5e5); border: none; cursor: pointer;
 }
 .sd-slider::-moz-range-thumb {
-  width: 14px; height: 14px; border-radius: 9999px;
-  background: var(--midground, #e5e5e5); border: none; cursor: pointer;
+  width: 13px; height: 13px; border-radius: 0;
+  background: var(--color-primary, #e5e5e5); border: none; cursor: pointer;
 }
 .sd-slider:disabled { opacity: 0.4; cursor: not-allowed; }
