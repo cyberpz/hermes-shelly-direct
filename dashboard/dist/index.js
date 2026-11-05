@@ -439,13 +439,21 @@
     var onlineCount = devices.filter(function (d) { return d.online; }).length;
 
     useEffect(function () {
-      // Press feedback: any button in the tab flashes for 500ms on click.
+      // Press feedback: any button in the tab flashes white for 500ms.
+      // Uses a fixed overlay so React re-renders cannot wipe it.
       function onPress(e) {
         var t = e.target;
         var b = t && t.closest ? t.closest("button") : null;
         if (!b || !b.closest(".sd-wrap") || b.disabled) return;
-        b.classList.add("sd-flash");
-        setTimeout(function () { b.classList.remove("sd-flash"); }, 500);
+        var r = b.getBoundingClientRect();
+        var box = document.createElement("div");
+        box.className = "sd-flashbox";
+        box.style.left = r.left + "px";
+        box.style.top = r.top + "px";
+        box.style.width = r.width + "px";
+        box.style.height = r.height + "px";
+        document.body.appendChild(box);
+        setTimeout(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 520);
       }
       document.addEventListener("click", onPress, true);
       return function () { document.removeEventListener("click", onPress, true); };

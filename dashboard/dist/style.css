@@ -21,22 +21,30 @@
 .sd-wrap button {
   border-radius: 0 !important;
   background: #000 !important;
-  border: 1px solid var(--border, var(--color-border, #262626)) !important;
-  color: var(--foreground, #ffffff) !important;
+  border: 1px solid var(--border, var(--color-border, #333333)) !important;
+  color: #ffffff !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: border-color 0.12s ease;
 }
 .sd-wrap button:hover:not(:disabled) {
-  border-color: var(--foreground, #ffffff) !important;
+  border-color: #ffffff !important;
 }
 .sd-wrap button:disabled { opacity: 0.4; }
-.sd-wrap button.sd-flash {
-  background: var(--foreground, #ffffff) !important;
-  border-color: var(--foreground, #ffffff) !important;
-  color: #000 !important;
+/* 500ms press flash: fixed overlay, survives React re-renders */
+.sd-flashbox {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #ffffff;
+  animation: sd-press 500ms ease-out forwards;
+}
+@keyframes sd-press {
+  0% { opacity: 1; }
+  70% { opacity: 0.85; }
+  100% { opacity: 0; }
 }
 .sd-head { border-bottom: 1px solid var(--border, var(--color-border, #262626)); }
 .sd-foot {
