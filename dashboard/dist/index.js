@@ -241,7 +241,7 @@
   /* ---------- main tab ---------- */
 
   function App() {
-    var storePair = useState({ devices: [], statuses: {}, errors: {}, discovering: false, lastUpdate: null, loaded: false, filter: "all" });
+    var storePair = useState({ devices: [], statuses: {}, errors: {}, discovering: false, lastUpdate: null, loaded: false, filter: "all", subnet: "" });
     var store = storePair[0], setStore = storePair[1];
     var pendPair = useState({});
     var pending = pendPair[0], setPendingMap = pendPair[1];
@@ -286,8 +286,21 @@
       var path = "/device/" + encodeURIComponent(mac) + (fast ? "/status" : "");
       return getJSON(path).then(function (res) {
         if (!aliveRef.current) return;
-        if (res && res.ok === false) setDeviceError(mac, res.error || "device read failed");
-        else if (res) setDeviceStatus(mac, res.status);
+        if (res && res.ok === false) {
+          setDeviceError(mac, res.error || "device read failed");
+          setStore(function (prev) {
+            return Object.assign({}, prev, { devices: prev.devices.map(function (d) {
+              return d.mac === mac ? Object.assign({}, d, { online: false }) : d;
+            }) });
+          });
+        } else if (res) {
+          setDeviceStatus(mac, res.status);
+          setStore(function (prev) {
+            return Object.assign({}, prev, { devices: prev.devices.map(function (d) {
+              return d.mac === mac ? Object.assign({}, d, { online: true }) : d;
+            }) });
+          });
+        }
       }).catch(function (e) {
         if (aliveRef.current) setDeviceError(mac, errMsg(e));
       });
@@ -344,7 +357,7 @@
 
     var discover = useCallback(function () {
       patch({ discovering: true });
-      return postJSON("/discover").then(function (res) {
+      return postJSON("/discover", { subnet: (store.subnet || "").trim() }).then(function (res) {
         if (!aliveRef.current) return;
         var devs = res && Array.isArray(res.devices) ? res.devices : [];
         patch({ devices: devs, discovering: false, lastUpdate: new Date().toISOString(), loaded: true });
@@ -353,7 +366,7 @@
       }).catch(function (e) {
         if (aliveRef.current) { patch({ discovering: false, loaded: true }); setFatal(errMsg(e)); }
       });
-    }, [patch, fetchStatuses]);
+    }, [patch, fetchStatuses, store.subnet]);
 
     var act = useCallback(function (mac, payload) {
       setPendingFor(mac, true);
@@ -405,6 +418,10 @@
           h("span", { className: "text-xs text-muted-foreground" },
             store.lastUpdate ? "updated " + timeAgo(store.lastUpdate) : "not updated yet"),
           h(Button, { size: "sm", variant: "outline", onClick: loadDevices, disabled: store.discovering }, "Refresh"),
+          h(Input, { value: store.subnet, placeholder: "subnet 192.168.1.0/24",
+            title: "Optional CIDR sweep when UDP broadcast is blocked",
+            className: "h-8 w-44 text-xs font-mono",
+            onChange: function (e) { patch({ subnet: e.target.value }); } }),
           h(Button, { size: "sm", onClick: discover, disabled: store.discovering },
             store.discovering ? h("span", { className: "sd-spin mr-1" }) : null,
             store.discovering ? "Discovering…" : "Discover")

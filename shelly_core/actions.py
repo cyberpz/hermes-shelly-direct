@@ -51,10 +51,13 @@ def _refresh_inventory(cfg: Dict[str, Any],
     for hit in found:
         hit.setdefault("online", True)
     inv = inventory.upsert(inv, found)
-    known_ips = {h["ip"] for h in found}
-    for record in inv.values():
-        if record.get("ip") and record["ip"] not in known_ips:
-            record["online"] = False
+    # Only demote devices when something was actually probed: zero UDP hits
+    # with no sweep means the transport is blocked, not that devices died.
+    if found or subnet or cfg["extra_hosts"]:
+        known_ips = {h["ip"] for h in found}
+        for record in inv.values():
+            if record.get("ip") and record["ip"] not in known_ips:
+                record["online"] = False
     inventory.save(inv)
     return inv
 
