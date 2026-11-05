@@ -244,6 +244,8 @@
   function App() {
     var storePair = useState({ devices: [], statuses: {}, errors: {}, discovering: false, lastUpdate: null, loaded: false, filter: "all", subnet: "" });
     var store = storePair[0], setStore = storePair[1];
+    var storeRef = useRef(null);
+    storeRef.current = store;
     var pendPair = useState({});
     var pending = pendPair[0], setPendingMap = pendPair[1];
     var setPair = useState(null);
@@ -378,8 +380,26 @@
         if (aliveRef.current) setDeviceError(mac, errMsg(e));
       }).then(function () {
         if (aliveRef.current) setPendingFor(mac, false);
+        // Covers settle a beat after the command lands: re-read shortly after.
+        setTimeout(function () { if (aliveRef.current) fetchDevice(mac, true); }, 1200);
       });
     }, [setPendingFor, fetchDevice, setDeviceError]);
+
+    useEffect(function () {
+      // While a cover is opening/closing, poll it every 3s so position and
+      // state (including Stop) track the real device instead of the 10s tick.
+      var iv = setInterval(function () {
+        var st = storeRef.current;
+        if (!aliveRef.current || !st) return;
+        Object.keys(st.statuses).forEach(function (mac) {
+          var covers = (st.statuses[mac] || {}).covers || [];
+          if (covers.some(function (c) { return c.state === "opening" || c.state === "closing"; })) {
+            fetchDevice(mac, true);
+          }
+        });
+      }, 3000);
+      return function () { clearInterval(iv); };
+    }, [fetchDevice]);
 
     useEffect(function () {
       aliveRef.current = true;
