@@ -1,0 +1,33 @@
+name: shelly-direct
+version: 1.0.0
+description: >
+  Control Shelly smart-home devices (Gen1/2/3) directly on your LAN: zero-config
+  UDP discovery, relays, dimmers, RGB, covers, power meters, sensors.
+  No Home Assistant, no MQTT broker, no cloud account.
+author: Cyberpz
+provides: [tools]
+provides_tools: [shelly]
+toolsets: [shelly]
+requires_hermes: ">=0.19"
+tags: [smart-home, iot, shelly, automation, lan]
+config_schema:
+  extra_hosts:
+    type: list
+    default: []
+    description: "IPs or CIDRs to probe beyond the local segment (UDP broadcast cannot cross routers)"
+  timeout_ms:
+    type: int
+    default: 3000
+    description: "Per-device HTTP timeout in milliseconds"
+  verify_writes:
+    type: bool
+    default: true
+    description: "Re-read device state after every command and retry once on mismatch"
+  auth_user:
+    type: str
+    default: ""
+    description: "Digest-auth user for protected devices (Shelly default user is 'admin')"
+  auth_password:
+    type: secret
+    default: ""
+    description: "Digest-auth password for protected devices"

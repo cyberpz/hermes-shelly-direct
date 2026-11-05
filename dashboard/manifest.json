@@ -1,0 +1,14 @@
+{
+  "name": "shelly-direct",
+  "label": "Shelly",
+  "description": "Control Shelly smart-home devices directly on your LAN — no Home Assistant, no cloud",
+  "icon": "Zap",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/shelly",
+    "position": "after:skills"
+  },
+  "entry": "dist/index.js",
+  "css": "dist/style.css",
+  "api": "plugin_api.py"
+}
