@@ -51,9 +51,11 @@ def _refresh_inventory(cfg: Dict[str, Any],
     for hit in found:
         hit.setdefault("online", True)
     inv = inventory.upsert(inv, found)
-    # Only demote devices when something was actually probed: zero UDP hits
-    # with no sweep means the transport is blocked, not that devices died.
-    if found or subnet or cfg["extra_hosts"]:
+    # Demote only when a sweep actually probed hosts (or found something):
+    # zero UDP hits with no sweep means the transport is blocked, not that
+    # devices died; an invalid CIDR expands to nothing and must be inert.
+    swept = bool(discovery.expand_hosts([subnet])) if subnet else False
+    if found or swept or cfg["extra_hosts"]:
         known_ips = {h["ip"] for h in found}
         for record in inv.values():
             if record.get("ip") and record["ip"] not in known_ips:
@@ -97,6 +99,9 @@ def _fetch_status(dev: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 # ------------------------------------------------------------------- actions
 def act_discover(cfg: Dict[str, Any], subnet: str = "") -> Dict[str, Any]:
+    if subnet and not discovery.expand_hosts([subnet]):
+        return {"ok": False,
+                "error": f"invalid subnet '{subnet}' (use a CIDR like 192.168.1.0/24, min /22)"}
     inv = _refresh_inventory(cfg, subnet=subnet)
     devices = [inventory.public_view(d) for d in inv.values()]
     return {"ok": True, "count": len(devices), "devices": devices}
@@ -125,7 +130,8 @@ def act_rename(mac: str, alias: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
             key = matches[0]
     if key not in inv:
         return {"ok": False, "error": f"no device matches '{mac}'"}
-    inv[key]["alias"] = str(alias).strip()[:64]
+    clean = "".join(ch for ch in str(alias) if ch.isprintable()).strip()
+    inv[key]["alias"] = clean[:64]
     inventory.save(inv)
     return {"ok": True, "device": inventory.public_view(inv[key])}
 
