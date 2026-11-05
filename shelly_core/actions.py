@@ -161,7 +161,15 @@ def act_status_fast(device: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
     client = _client(dev, cfg)
     raw = client.get_status(dev["gen"])
     if "error" in raw:
+        if dev.get("online"):
+            dev["online"] = False
+            inventory.save(inv)
         return {"ok": False, "error": raw["error"]}
+    if not dev.get("online"):
+        # A successful read heals a stale offline flag (only writes on change).
+        dev["online"] = True
+        dev["last_seen"] = inventory._now()
+        inventory.save(inv)
     status = normalize_status(dev["gen"], raw)
     return {"ok": True, "device": inventory.public_view(dev), "status": status}
 

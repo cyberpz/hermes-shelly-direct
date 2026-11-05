@@ -311,7 +311,9 @@
 
     var fetchStatuses = useCallback(function (devices) {
       (devices || []).forEach(function (d) {
-        if (d && d.online && d.mac) fetchDevice(d.mac, true);
+        // Poll every known device: a real status read is the source of truth
+        // for online state, so even "offline" cards get a chance to heal.
+        if (d && d.mac) fetchDevice(d.mac, true);
       });
     }, [fetchDevice]);
 
