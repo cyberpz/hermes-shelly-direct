@@ -1,76 +1,76 @@
-1|/* Shelly Direct — sharp card pass. Theme tokens only, no invented colors. */
-2|.sd-wrap { max-width: 76rem; margin: 0 auto; }
-3|.sd-grid {
-4|  display: grid;
-5|  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-6|  gap: 0.75rem;
-7|}
-8|.sd-card {
-9|  min-width: 0;
-10|  border-radius: 0 !important;
-11|  border: 1px solid var(--border, var(--color-border, #262626));
-12|  border-left: 3px solid var(--border, var(--color-border, #262626));
-13|  transition: border-color 0.15s ease;
-14|}
-15|.sd-card:hover { border-color: var(--muted-foreground, var(--color-muted-foreground, #525252)); }
-16|.sd-card.sd-live { border-left-color: var(--primary, var(--color-primary, #e5e5e5)); }
-17|.sd-card.sd-offline { opacity: 0.45; }
-18|/* sharp everything inside the card */
-19|.sd-card button, .sd-card input, .sd-card select { border-radius: 0 !important; }
-20|.sd-head { border-bottom: 1px solid var(--border, var(--color-border, #262626)); }
-21|.sd-foot {
-22|  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
-23|  border-top: 1px solid var(--border, var(--color-border, #262626));
-24|  margin-top: 0.35rem; padding-top: 0.45rem;
-25|  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-26|  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
-27|  color: var(--muted-foreground, var(--color-muted-foreground, #737373));
-28|}
-29|.sd-foot .sd-sep { opacity: 0.5; }
-30|.sd-err {
-31|  max-width: 100%;
-32|  overflow: hidden;
-33|  text-overflow: ellipsis;
-34|  white-space: nowrap;
-35|}
-36|.sd-dot {
-37|  width: 8px; height: 8px; border-radius: 0;
-38|  display: inline-block; flex: none; margin-top: 4px;
-39|}
-40|.sd-dot-on {
-41|  background: var(--primary, var(--color-primary, #22c55e));
-42|  box-shadow: 0 0 6px var(--primary, rgba(34, 197, 94, 0.7));
-43|}
-44|.sd-dot-off { background: var(--color-muted-foreground, #6b7280); }
-45|.sd-kind {
-46|  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-47|  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-48|  border: 1px solid var(--border, var(--color-border, #262626));
-49|  padding: 1px 5px; color: var(--muted-foreground, var(--color-muted-foreground, #737373));
-50|}
-51|.sd-spin {
-52|  display: inline-block; flex: none;
-53|  width: 0.8rem; height: 0.8rem;
-54|  border: 2px solid currentColor;
-55|  border-top-color: transparent;
-56|  border-radius: 9999px;
-57|  animation: sd-rotate 0.7s linear infinite;
-58|  vertical-align: -2px;
-59|}
-60|@keyframes sd-rotate { to { transform: rotate(360deg); } }
-61|.sd-slider {
-62|  flex: 1 1 auto; min-width: 0; height: 4px;
-63|  appearance: none; -webkit-appearance: none;
-64|  background: var(--muted, var(--color-muted, #2a2a2a));
-65|  outline: none; cursor: pointer;
-66|}
-67|.sd-slider::-webkit-slider-thumb {
-68|  appearance: none; -webkit-appearance: none;
-69|  width: 13px; height: 13px; border-radius: 0;
-70|  background: var(--primary, var(--color-primary, #e5e5e5)); border: none; cursor: pointer;
-71|}
-72|.sd-slider::-moz-range-thumb {
-73|  width: 13px; height: 13px; border-radius: 0;
-74|  background: var(--primary, var(--color-primary, #e5e5e5)); border: none; cursor: pointer;
-75|}
-76|.sd-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Shelly Direct — sharp card pass. Theme tokens only, no invented colors. */
+.sd-wrap { max-width: 76rem; margin: 0 auto; }
+.sd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.75rem;
+}
+.sd-card {
+  min-width: 0;
+  border-radius: 0 !important;
+  border: 1px solid var(--border, var(--color-border, #262626));
+  border-left: 3px solid var(--border, var(--color-border, #262626));
+  transition: border-color 0.15s ease;
+}
+.sd-card:hover { border-color: var(--muted-foreground, var(--color-muted-foreground, #525252)); }
+.sd-card.sd-live { border-left-color: var(--primary, var(--color-primary, #e5e5e5)); }
+.sd-card.sd-offline { opacity: 0.45; }
+/* sharp everything inside the card */
+.sd-card button, .sd-card input, .sd-card select { border-radius: 0 !important; }
+.sd-head { border-bottom: 1px solid var(--border, var(--color-border, #262626)); }
+.sd-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  border-top: 1px solid var(--border, var(--color-border, #262626));
+  margin-top: 0.35rem; padding-top: 0.45rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted-foreground, var(--color-muted-foreground, #737373));
+}
+.sd-foot .sd-sep { opacity: 0.5; }
+.sd-err {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sd-dot {
+  width: 8px; height: 8px; border-radius: 0;
+  display: inline-block; flex: none; margin-top: 4px;
+}
+.sd-dot-on {
+  background: var(--primary, var(--color-primary, #22c55e));
+  box-shadow: 0 0 6px var(--primary, rgba(34, 197, 94, 0.7));
+}
+.sd-dot-off { background: var(--muted-foreground, var(--color-muted-foreground, #6b7280)); }
+.sd-kind {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--border, var(--color-border, #262626));
+  padding: 1px 5px; color: var(--muted-foreground, var(--color-muted-foreground, #737373));
+}
+.sd-spin {
+  display: inline-block; flex: none;
+  width: 0.8rem; height: 0.8rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: sd-rotate 0.7s linear infinite;
+  vertical-align: -2px;
+}
+@keyframes sd-rotate { to { transform: rotate(360deg); } }
+.sd-slider {
+  flex: 1 1 auto; min-width: 0; height: 4px;
+  appearance: none; -webkit-appearance: none;
+  background: var(--muted, var(--color-muted, #2a2a2a));
+  outline: none; cursor: pointer;
+}
+.sd-slider::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 13px; height: 13px; border-radius: 0;
+  background: var(--primary, var(--color-primary, #e5e5e5)); border: none; cursor: pointer;
+}
+.sd-slider::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 0;
+  background: var(--primary, var(--color-primary, #e5e5e5)); border: none; cursor: pointer;
+}
+.sd-slider:disabled { opacity: 0.4; cursor: not-allowed; }
