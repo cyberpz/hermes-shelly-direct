@@ -246,6 +246,7 @@
     var store = storePair[0], setStore = storePair[1];
     var storeRef = useRef(null);
     storeRef.current = store;
+    var recentlyActed = useRef({});
     var pendPair = useState({});
     var pending = pendPair[0], setPendingMap = pendPair[1];
     var setPair = useState(null);
@@ -384,20 +385,26 @@
         if (aliveRef.current) setPendingFor(mac, false);
         // Covers settle a beat after the command lands: re-read shortly after.
         setTimeout(function () { if (aliveRef.current) fetchDevice(mac, true); }, 1200);
+        // Gen1 covers never report "opening": keep fast-polling this device
+        // for a short window so travel and Stop track at ~3s on every gen.
+        recentlyActed.current[mac] = Date.now();
       });
     }, [setPendingFor, fetchDevice, setDeviceError]);
 
     useEffect(function () {
-      // While a cover is opening/closing, poll it every 3s so position and
-      // state (including Stop) track the real device instead of the 10s tick.
+      // Fast lane every 3s: covers visibly in motion, or any device acted on
+      // in the last 20s. Everything else rides the 10s tick.
       var iv = setInterval(function () {
         var st = storeRef.current;
         if (!aliveRef.current || !st) return;
+        var now = Date.now();
+        Object.keys(recentlyActed.current).forEach(function (mac) {
+          if (now - recentlyActed.current[mac] > 20000) delete recentlyActed.current[mac];
+        });
         Object.keys(st.statuses).forEach(function (mac) {
           var covers = (st.statuses[mac] || {}).covers || [];
-          if (covers.some(function (c) { return c.state === "opening" || c.state === "closing"; })) {
-            fetchDevice(mac, true);
-          }
+          var moving = covers.some(function (c) { return c.state === "opening" || c.state === "closing"; });
+          if (moving || recentlyActed.current[mac]) fetchDevice(mac, true);
         });
       }, 3000);
       return function () { clearInterval(iv); };
