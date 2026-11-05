@@ -20,6 +20,7 @@
   var C = SDK.components || {};
   var Card = C.Card, CardHeader = C.CardHeader, CardTitle = C.CardTitle, CardContent = C.CardContent;
   var Badge = C.Badge, Button = C.Button;
+  var Input = C.Input || function (props) { return h("input", props); };
   var utils = SDK.utils || {};
   var cn = typeof utils.cn === "function" ? utils.cn : function () {
     return Array.prototype.slice.call(arguments).filter(Boolean).join(" ");
