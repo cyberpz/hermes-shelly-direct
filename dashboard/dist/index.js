@@ -24,8 +24,15 @@
   var cn = typeof utils.cn === "function" ? utils.cn : function () {
     return Array.prototype.slice.call(arguments).filter(Boolean).join(" ");
   };
-  var timeAgo = typeof utils.timeAgo === "function" ? utils.timeAgo : function (v) {
+  var _timeAgo = typeof utils.timeAgo === "function" ? utils.timeAgo : function (v) {
     return v ? String(v) : "never";
+  };
+  // SDK timeAgo expects epoch millis; accept ISO strings and numbers alike
+  var timeAgo = function (v) {
+    if (v == null) return "never";
+    var ms = typeof v === "number" ? v : Date.parse(v);
+    if (isNaN(ms)) return "never";
+    return _timeAgo(ms);
   };
 
   var API = "/api/plugins/shelly-direct";
