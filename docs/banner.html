@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 600px; overflow: hidden;
+    background: #0b0805;
+    background-image:
+      radial-gradient(circle at 78% 30%, rgba(0, 255, 65, 0.10), transparent 46%),
+      linear-gradient(rgba(0,255,65,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,65,0.05) 1px, transparent 1px);
+    background-size: auto, 32px 32px, 32px 32px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    color: #e8ffe8; position: relative;
+  }
+  .frame { position: absolute; inset: 26px; border: 1px solid rgba(0,255,65,0.28); }
+  .corner { position: absolute; width: 22px; height: 22px; border: 2px solid #00ff41; }
+  .c1 { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+  .c2 { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+  .c3 { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+  .c4 { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+  .left { position: absolute; left: 68px; top: 96px; width: 560px; }
+  .kicker { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: .34em; color: #00ff41; opacity: .9; }
+  h1 { font-size: 74px; line-height: .94; letter-spacing: -.02em; margin: 18px 0 0; font-weight: 700; }
+  h1 span { color: #00ff41; }
+  .sub { margin-top: 20px; font-size: 17px; line-height: 1.55; color: #9fbfa4; max-width: 500px; }
+  .chips { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
+  .chip { border: 1px solid rgba(0,255,65,.4); padding: 5px 10px; font-size: 11px; letter-spacing: .18em; color: #b8ffc6; }
+  .foot { position: absolute; left: 68px; bottom: 62px; font-size: 12px; letter-spacing: .22em; color: #5f7a63; }
+  /* device card mock */
+  .cards { position: absolute; right: 62px; top: 84px; width: 470px; display: grid; gap: 12px; }
+  .card {
+    background: #08090a; border: 1px solid rgba(0,255,65,.22); border-left: 3px solid #00ff41;
+    padding: 14px 16px;
+  }
+  .card.off { border-left-color: rgba(0,255,65,.22); }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .name { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+  .tag { font-size: 9px; letter-spacing: .16em; color: #7fa387; border: 1px solid rgba(0,255,65,.25); padding: 1px 5px; }
+  .bar { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { flex: 1; border: 1px solid rgba(0,255,65,.35); background: #000; color: #e8ffe8; font-size: 10px; letter-spacing: .14em; padding: 6px 0; text-align: center; }
+  .btn.on { border-color: #00ff41; color: #00ff41; }
+  .meta { margin-top: 10px; font-size: 9px; letter-spacing: .14em; color: #6d8a72; border-top: 1px solid rgba(0,255,65,.15); padding-top: 8px; }
+  .dot { width: 8px; height: 8px; background: #00ff41; display: inline-block; box-shadow: 0 0 8px #00ff41; }
+  .dot.off { background: #55705a; box-shadow: none; }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+  <div class="corner c1"></div><div class="corner c2"></div>
+  <div class="corner c3"></div><div class="corner c4"></div>
+
+  <div class="left">
+    <div class="kicker">HERMES AGENT PLUGIN</div>
+    <h1>Shelly<br><span>Direct</span></h1>
+    <div class="sub">Local-network control for Shelly Gen 1/2/3.<br>No cloud, no Home Assistant, no MQTT bridge.<br>Talk to the relays, dimmers and blinds yourself.</div>
+    <div class="chips">
+      <div class="chip">HTTP / LAN</div>
+      <div class="chip">DASHBOARD TAB</div>
+      <div class="chip">CHAT TOOL</div>
+      <div class="chip">READ-BACK VERIFIED</div>
+    </div>
+    <div class="foot">DISCOVER · CONTROL · VERIFY</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="row"><div class="name">Kitchen Vent</div><span class="dot"></span></div>
+      <div class="row" style="margin-top:6px"><span class="tag">RELAY</span><span class="tag">G2</span></div>
+      <div class="bar"><div class="btn on">ON</div><div class="btn">OFF</div><div class="btn">TOGGLE</div></div>
+      <div class="meta">10.0.0.21 / SEEN 3S AGO</div>
+    </div>
+    <div class="card off">
+      <div class="row"><div class="name">Bedroom Blind</div><span class="dot off"></span></div>
+      <div class="row" style="margin-top:6px"><span class="tag">COVER</span><span class="tag">G1</span></div>
+      <div class="bar"><div class="btn">OPEN</div><div class="btn">STOP</div><div class="btn">CLOSE</div></div>
+      <div class="meta">10.0.0.22 / 46% / STOPPED</div>
+    </div>
+    <div class="card off">
+      <div class="row"><div class="name">Hall Light</div><span class="dot off"></span></div>
+      <div class="row" style="margin-top:6px"><span class="tag">DIMMER</span><span class="tag">G3</span></div>
+      <div class="bar"><div class="btn">0%</div><div class="btn on">72%</div><div class="btn">100%</div></div>
+      <div class="meta">10.0.0.23 / 4.2 W</div>
+    </div>
+  </div>
+</body>
+</html>
