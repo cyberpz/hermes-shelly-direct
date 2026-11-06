@@ -26,6 +26,14 @@ Gen2/Gen3 RPC) and gets out of the way.
 - 🔒 **LAN-only** — the plugin talks to your devices and nothing else (see
   [Security & disclosure](#security--disclosure))
 
+## Demo (64s)
+
+Real hardware, real clicks — a 47-device fleet on Gen 1/2/3:
+
+[![demo](docs/banner.png)](docs/demo.mp4)
+
+`docs/demo.mp4`
+
 ## Install
 
 ```bash
@@ -63,7 +71,12 @@ Devices are addressed by name, alias (substring ok), id, MAC or IP.
 A bundled skill teaches the agent the vocabulary and the failure modes
 (battery devices sleep, ambiguous names, protected devices).
 
-## CLI
+## CLI (only when plugins run in-process)
+
+`hermes plugins` defaults to host isolation, where plugin CLI subcommands are
+not wired into the CLI parser — so this section applies only if you run plugins
+in-process (`plugins.isolation: local`). The chat tool and dashboard are the
+supported surfaces everywhere.
 
 ```bash
 hermes shelly discover            # scan + inventory
