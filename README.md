@@ -120,6 +120,7 @@ All optional — defaults work out of the box.
 | `verify_writes` | `true` | read back state after every command, retry once on mismatch |
 | `auth_user` | `""` | digest-auth user for password-protected devices (`admin`) |
 | `auth_password` | — | digest-auth password, stored as a Hermes secret |
+| `allow_model_sweep` | `false` | let the agent pick CIDR ranges for sweeps (the dashboard can always sweep) |
 
 ## How it works
 
@@ -139,10 +140,14 @@ inventory   MAC-keyed JSON in the Hermes plugin-data dir (IPs drift, MACs don't)
   store (`get_secret`), never in config files.
 - **Writes:** only to devices you address; every write is verified by reading
   the device back.
-- **Discovery sweep:** the CIDR sweep is opt-in (explicit `subnet` or
-  `extra_hosts`), TCP-gated, and capped at /22 per entry. A malformed CIDR is
-  rejected before any traffic leaves the box, and a sweep that probed nothing
-  never demotes your inventory.
+- **Discovery sweep:** the CIDR sweep is opt-in, TCP-gated and capped at /22 per
+  entry. Targets are **allowlisted** to RFC1918 / CGNAT / IPv6 ULA: loopback,
+  link-local (169.254/16, cloud metadata), multicast, 0.0.0.0/8 and all public
+  space are never probed. A CIDR coming from the *model* is ignored unless the
+  user sets `allow_model_sweep: true`; the dashboard's Discover field is
+  user-driven and always allowed. A malformed CIDR is rejected before any
+  traffic leaves the box, and a sweep that probed nothing never demotes your
+  inventory.
 
 ## Development
 

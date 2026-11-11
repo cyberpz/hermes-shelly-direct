@@ -94,8 +94,34 @@ def local_broadcasts() -> List[str]:
     return targets
 
 
+_ALLOWED_NETS = [ipaddress.ip_network(n) for n in (
+    "10.0.0.0/8",        # RFC1918
+    "172.16.0.0/12",     # RFC1918
+    "192.168.0.0/16",    # RFC1918
+    "100.64.0.0/10",     # CGNAT — Tailscale/WireGuard meshes
+    "fc00::/7",          # IPv6 ULA
+)]
+
+
+def _target_allowed(ip_str: str) -> bool:
+    """Sweep targets must be real LAN addresses.
+
+    Allowlist, not denylist: only RFC1918 / CGNAT / ULA. Loopback, link-local
+    (169.254/16 — APIPA and cloud metadata), multicast, 0.0.0.0/8, public space
+    and everything else never get probed, so a model-supplied CIDR cannot turn
+    this plugin into a scanner.
+    """
+    try:
+        ip = ipaddress.ip_address(str(ip_str).strip())
+    except ValueError:
+        return False
+    if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_reserved:
+        return False
+    return any(ip in net for net in _ALLOWED_NETS if net.version == ip.version)
+
+
 def expand_hosts(entries: List[str]) -> List[str]:
-    """Accept plain IPs and CIDRs (prefix >= /22 only) from config."""
+    """Accept plain private IPs and CIDRs (prefix >= /22 only) from config."""
     hosts: List[str] = []
     for entry in entries or []:
         entry = str(entry).strip()
@@ -108,8 +134,8 @@ def expand_hosts(entries: List[str]) -> List[str]:
                 continue
             if net.prefixlen < 22 or net.num_addresses > _MAX_CIDR_HOSTS:
                 continue
-            hosts.extend(str(h) for h in net.hosts())
-        else:
+            hosts.extend(str(h) for h in net.hosts() if _target_allowed(str(h)))
+        elif _target_allowed(entry):
             hosts.append(entry)
     return hosts
 

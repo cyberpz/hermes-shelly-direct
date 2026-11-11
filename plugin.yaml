@@ -31,3 +31,7 @@ config_schema:
     type: secret
     default: ""
     description: "Digest-auth password for protected devices"
+  allow_model_sweep:
+    type: bool
+    default: false
+    description: "Let the agent choose CIDR ranges for discovery sweeps (off: only the dashboard can sweep)"

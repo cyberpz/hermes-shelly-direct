@@ -22,6 +22,9 @@ DEFAULT_CFG = {
     "extra_hosts": [],
     "auth_user": "",
     "auth_password": "",
+    # Off by default: the model may not pick sweep ranges on its own. The
+    # dashboard's Discover field is user-driven and always allowed.
+    "allow_model_sweep": False,
 }
 
 

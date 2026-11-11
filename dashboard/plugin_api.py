@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import os
 import sys
+import logging
 from pathlib import Path
 from typing import Optional
+
+log = logging.getLogger(__name__)
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -30,20 +33,40 @@ VERSION = "1.0.0"
 
 def _settings() -> dict:
     """Read plugin settings straight from config.yaml (the dashboard process
-    has no PluginContext). Secrets stay in the environment / secret store."""
+    has no PluginContext). Secrets stay in the environment / secret store.
+
+    Uses Hermes' own YAML module (PyYAML is not a dependency) and the resolved
+    Hermes home, not ``os.environ["HERMES_HOME"]`` — that holds the launch
+    profile's value and is wrong for a dashboard serving another profile.
+    """
     settings: dict = {}
     try:
-        import yaml
-        cfg_path = Path(os.environ.get("HERMES_HOME",
-                                       Path.home() / ".hermes")) / "config.yaml"
-        data = yaml.safe_load(cfg_path.read_text()) or {}
-        entry = (data.get("plugins", {}).get("entries", {})
-                 .get(PLUGIN_ID, {}).get("settings", {})) or {}
-        for key in ("timeout_ms", "verify_writes", "extra_hosts", "auth_user"):
-            if entry.get(key) not in (None, ""):
-                settings[key] = entry[key]
-    except Exception:  # noqa: BLE001 — defaults are fine
-        pass
+        from hermes_yaml import safe_load  # type: ignore
+    except Exception:  # noqa: BLE001
+        try:
+            from ruamel.yaml import YAML  # type: ignore
+
+            def safe_load(text):  # type: ignore[misc]
+                return YAML(typ="safe").load(text)
+        except Exception:  # noqa: BLE001
+            safe_load = None  # type: ignore[assignment]
+    home = None
+    try:
+        from hermes_constants import get_hermes_home  # type: ignore
+        home = Path(get_hermes_home())
+    except Exception:  # noqa: BLE001
+        home = Path(os.environ.get("HERMES_HOME") or (Path.home() / ".hermes"))
+    if safe_load is not None:
+        try:
+            data = safe_load((home / "config.yaml").read_text()) or {}
+            entry = (data.get("plugins", {}).get("entries", {})
+                     .get(PLUGIN_ID, {}).get("settings", {})) or {}
+            for key in ("timeout_ms", "verify_writes", "extra_hosts", "auth_user",
+                        "allow_model_sweep"):
+                if entry.get(key) not in (None, ""):
+                    settings[key] = entry[key]
+        except Exception:  # noqa: BLE001 — defaults are fine
+            log.debug("could not read plugin settings from %s", home / "config.yaml")
     try:
         from agent.secret_scope import get_secret
         secret = get_secret("SHELLY_DIRECT_AUTH_PASSWORD")

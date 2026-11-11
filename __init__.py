@@ -104,7 +104,16 @@ def _make_handler(ctx):
             device = str(args.get("device", "") or "")
             channel = int(args.get("channel", 0) or 0)
             if action == "discover":
-                result = actions.act_discover(cfg, str(args.get("subnet", "") or ""))
+                subnet = str(args.get("subnet", "") or "").strip()
+                if subnet and not cfg.get("allow_model_sweep"):
+                    # Model-chosen sweep ranges are opt-in: unmapped CIDRs from
+                    # a prompt are a scanner waiting to happen.
+                    result = actions.act_discover(cfg)
+                    result["note"] = ("subnet ignored: sweeps picked by the model are disabled. "
+                                      "Use the dashboard Discover field, or set "
+                                      "allow_model_sweep: true in the plugin settings.")
+                else:
+                    result = actions.act_discover(cfg, subnet)
             elif action == "list":
                 result = actions.act_list(cfg)
             elif action == "status":
@@ -167,7 +176,9 @@ def register(ctx):
     skill_path = Path(__file__).parent / "skills" / "shelly-direct" / "SKILL.md"
     if skill_path.exists():
         try:
-            ctx.register_skill("shelly-direct", skill_path.read_text())
+            # register_skill takes the file PATH (it reads/validates it itself);
+            # passing the text raised FileNotFoundError and the skill never loaded.
+            ctx.register_skill("shelly-direct", skill_path)
         except Exception:  # noqa: BLE001 — skill is additive polish
             log.exception("could not register bundled skill")
     try:
